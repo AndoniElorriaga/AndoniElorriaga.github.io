@@ -10,9 +10,12 @@
 <meta property="og:image" content="https://andonielorriaga.github.io/cumple/og.jpg">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#17301f">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,800;0,6..96,900;1,6..96,500;1,6..96,700&family=Archivo:wdth,wght@62..125,300..700&display=swap">
+<link rel="preload" href="fonts/bodoni-moda.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Fuentes alojadas aquí (licencia OFL): sin peticiones a Google */
+@font-face{font-family:"Bodoni Moda";font-style:normal;font-weight:400 900;font-display:swap;src:url(fonts/bodoni-moda.woff2) format("woff2")}
+@font-face{font-family:"Bodoni Moda";font-style:italic;font-weight:400 900;font-display:swap;src:url(fonts/bodoni-moda-italic.woff2) format("woff2")}
+@font-face{font-family:"Archivo";font-style:normal;font-weight:100 900;font-stretch:62% 125%;font-display:swap;src:url(fonts/archivo.woff2) format("woff2")}
 /* Layout: una botella. Se abre quitando la chapa; arriba la foto de Andoni con la etiqueta pegada encima, debajo la contraetiqueta con los datos, y el cupón de reserva para confirmar. Todo centrado como una etiqueta de verdad. */
 :root{
   color-scheme:dark;
@@ -116,6 +119,13 @@ section{padding-block:56px}
 .where span{font:400 1rem var(--sans);color:var(--soft)}
 .map{border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px rgba(200,160,74,.6),0 18px 40px rgba(0,0,0,.35);background:#e8e4da}
 .map iframe{display:block;width:100%;aspect-ratio:4/3.2;border:0}
+.map-off{aspect-ratio:4/3.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center;color:var(--ink);
+  background:repeating-linear-gradient(35deg,transparent 0 22px,rgba(51,32,15,.06) 22px 24px),repeating-linear-gradient(-55deg,transparent 0 34px,rgba(51,32,15,.05) 34px 36px),var(--label)}
+.map-off svg{color:var(--seal)}
+.map-off .btn{background:var(--ink);color:var(--label)}
+.map-off p{font-size:.82rem;color:rgba(51,32,15,.7);max-width:26ch}
+.privacy{font-size:.78rem;line-height:1.5;color:rgba(51,32,15,.68);border-top:1px solid var(--paper-line);padding-top:14px;margin-top:4px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .maps{align-self:center;text-decoration:none}
 
 /* plan */
@@ -206,8 +216,12 @@ form{display:flex;flex-direction:column;gap:18px}
   <section><div class="wrap stack">
     <h2 class="light">Cómo llegar</h2>
     <p class="where">Factory Cervecería<br><span>Cabezo de Torres, Murcia</span></p>
-    <div class="map">
-      <iframe title="Mapa del Factory en Cabezo de Torres" src="https://maps.google.com/maps?q=Factory%20Cervecer%C3%ADa%20Cabezo%20de%20Torres%20Murcia&z=16&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <div class="map" id="map">
+      <div class="map-off">
+        <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+        <button class="btn" type="button" id="mapbtn">Ver mapa</button>
+        <p>Al pulsar se carga Google Maps, que usa sus propias cookies.</p>
+      </div>
     </div>
     <a class="btn maps" href="https://www.google.com/maps/search/?api=1&query=Factory+Cervecer%C3%ADa+Cabezo+de+Torres+Murcia" target="_blank" rel="noopener">Abrir en Google Maps</a>
   </div></section>
@@ -238,8 +252,10 @@ form{display:flex;flex-direction:column;gap:18px}
           <label for="msg">Un mensaje para Andoni (opcional)</label>
           <textarea id="msg" maxlength="500"></textarea>
         </div>
+        <div class="hp" aria-hidden="true"><label for="web">No rellenes este campo</label><input type="text" id="web" tabindex="-1" autocomplete="off"></div>
         <p class="err" id="err" hidden></p>
         <button class="btn" type="submit" id="send">Enviar respuesta</button>
+        <p class="privacy">Tu nombre, tu respuesta y tu mensaje los recibe solo Andoni Elorriaga para organizar el cumpleaños. Se guardan en un servidor de Supabase en Londres (Reino Unido, país con nivel de protección reconocido por la UE) y se borrarán después de la fiesta. Si quieres que borre o corrija tus datos antes, díselo a Andoni. No se usan para nada más ni se ceden a nadie.</p>
       </form>
       <div class="done" id="done" hidden>
         <h3 id="done-t"></h3>
@@ -333,15 +349,22 @@ form{display:flex;flex-direction:column;gap:18px}
     if(!c){c=crypto.randomUUID?crypto.randomUUID():([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,function(x){return(x^crypto.getRandomValues(new Uint8Array(1))[0]&15>>x/4).toString(16)});store('cumple46-clave',c)}
     return c}
   function fail(m){var e=$('err');e.textContent=m;e.hidden=false}
+  /* mapa solo al pulsar: sin cookies de Google hasta que el invitado lo pide */
+  $('mapbtn').onclick=function(){var f=document.createElement('iframe');f.title='Mapa del Factory en Cabezo de Torres';
+    f.src='https://maps.google.com/maps?q=Factory%20Cervecer%C3%ADa%20Cabezo%20de%20Torres%20Murcia&z=16&output=embed';f.referrerPolicy='no-referrer-when-downgrade';
+    var m=$('map');m.textContent='';m.append(f)};
+
   $('form').onsubmit=function(ev){ev.preventDefault();$('err').hidden=true;
+    /* campo trampa: solo lo rellenan los bots */
+    if($('web').value){showDone({asiste:true,nombre:'invitado',mensaje:''});return}
     var nombre=$('nom').value.trim();
     if(!nombre){$('nom').focus();return fail('Escribe tu nombre para que sepa quién eres.')}
     var r={asiste:$('att-si').checked,nombre:nombre.slice(0,80),mensaje:$('msg').value.trim().slice(0,500)};
     var btn=$('send');btn.disabled=true;btn.textContent='Enviando…';
     fetch(SB+'/rest/v1/rpc/cumple_confirmar',{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},
       body:JSON.stringify({p_clave:clave(),p_asiste:r.asiste,p_asistentes:[{nombre:r.nombre}],p_mensaje:r.mensaje})})
-    .then(function(res){if(!res.ok)throw new Error(res.status);store('cumple46-respuesta',JSON.stringify(r));showDone(r)})
-    .catch(function(){fail('No se ha podido enviar. Revisa la conexión y vuelve a pulsar Enviar respuesta; si sigue fallando, escríbele a Andoni por WhatsApp.')})
+    .then(function(res){if(!res.ok)return res.json().catch(function(){return{}}).then(function(j){throw new Error(/demasiadas|completo/.test(j.message||'')?j.message:res.status)});store('cumple46-respuesta',JSON.stringify(r));showDone(r)})
+    .catch(function(e){if(/demasiadas|completo/.test(e.message))return fail(e.message);fail('No se ha podido enviar. Revisa la conexión y vuelve a pulsar Enviar respuesta; si sigue fallando, escríbele a Andoni por WhatsApp.')})
     .finally(function(){btn.disabled=false;btn.textContent='Enviar respuesta'})};
 })();
 </script>
