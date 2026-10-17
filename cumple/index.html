@@ -326,8 +326,7 @@ form{display:flex;flex-direction:column;gap:18px}
 
   /* quitar la chapa */
   function open(){$('cap').classList.add('gone');document.body.classList.add('open')}
-  $('openbtn').onclick=function(){open();store('cumple46-abierta','1')};
-  if(store('cumple46-abierta'))open();
+  $('openbtn').onclick=open;
 
   /* cuenta atrás */
   var day=new Date('2026-10-29T20:00:00+01:00').getTime();
